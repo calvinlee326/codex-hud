@@ -1,8 +1,11 @@
 # codex-hud-dashboard
 
 A safe, local-first terminal **HUD and usage dashboard for the OpenAI Codex
-CLI**. Inspired by `claude-hud`, built for the easiest possible Codex experience:
-install it, run `setup` once, then keep using `codex` exactly as you do today.
+CLI**. The HUD layout and design are inspired by
+[claude-hud](https://github.com/jarrodwatts/claude-hud) by
+[Jarrod Watts](https://github.com/jarrodwatts), reimagined for Codex. Built for
+the easiest possible Codex experience: install it, run `setup` once, then keep
+using `codex` exactly as you do today.
 
 > **Local-first and privacy-safe.** codex-hud reads only local metadata Codex
 > already writes. It makes **no network calls**, never scrapes credentials, never
@@ -121,6 +124,14 @@ npm run build              # compile to dist/
 See [docs/roadmap.md](docs/roadmap.md). Out of scope by design: binary patching,
 a `run codex` wrapper, credential scraping, unofficial API calls, official quota
 claims, cloud sync, and telemetry.
+
+## Acknowledgments
+
+The HUD design and layout are inspired by
+[claude-hud](https://github.com/jarrodwatts/claude-hud) by
+[Jarrod Watts](https://github.com/jarrodwatts) — a terminal HUD for Claude Code.
+codex-hud reimplements the idea for the OpenAI Codex CLI using Codex's own local
+session data and hooks. All code here is original; no claude-hud code is included.
 
 ## License
 
