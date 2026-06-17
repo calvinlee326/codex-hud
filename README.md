@@ -1,11 +1,24 @@
 # codex-hud-dashboard
 
+[![npm version](https://img.shields.io/npm/v/codex-hud-dashboard.svg)](https://www.npmjs.com/package/codex-hud-dashboard)
+[![CI](https://github.com/calvinlee326/codex-hud/actions/workflows/ci.yml/badge.svg)](https://github.com/calvinlee326/codex-hud/actions/workflows/ci.yml)
+[![license](https://img.shields.io/npm/l/codex-hud-dashboard.svg)](LICENSE)
+[![node](https://img.shields.io/node/v/codex-hud-dashboard.svg)](https://nodejs.org)
+
 A safe, local-first terminal **HUD and usage dashboard for the OpenAI Codex
 CLI**. The HUD layout and design are inspired by
 [claude-hud](https://github.com/jarrodwatts/claude-hud) by
 [Jarrod Watts](https://github.com/jarrodwatts), reimagined for Codex. Built for
 the easiest possible Codex experience: install it, run `setup` once, then keep
 using `codex` exactly as you do today.
+
+<p align="center">
+  <img src="docs/demo.png" alt="codex-hud showing model, context, usage, rate limits, assets, and approval mode above a Codex session" width="820">
+</p>
+
+<!-- To update this image: take a terminal screenshot of `codex` starting with the
+     HUD visible and save it as docs/demo.png. For an animated version, record with
+     vhs (https://github.com/charmbracelet/vhs) and use docs/demo.gif instead. -->
 
 > **Local-first and privacy-safe.** codex-hud reads only local metadata Codex
 > already writes. It makes **no network calls**, never scrapes credentials, never

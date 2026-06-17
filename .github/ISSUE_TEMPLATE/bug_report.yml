@@ -1,0 +1,43 @@
+name: Bug report
+description: Something isn't working
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! Please do not paste credentials or private
+        transcript contents — codex-hud only reads metadata, and so should issues.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+      placeholder: The per-prompt HUD shows ... but I expected ...
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. codex-hud setup
+        2. codex
+        3. type a prompt
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `codex-hud doctor`
+      description: This is privacy-safe (no credentials or message bodies).
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: codex-hud version, `codex --version`, Node version, OS
+      placeholder: codex-hud 0.1.10 · codex-cli 0.140.0 · node 22 · macOS 15
+    validations:
+      required: true
