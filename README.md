@@ -51,44 +51,57 @@ in-Codex colors look wrong on your terminal, reinstall plain with
 
 ## What it shows
 
-A compact, colorized status block (colors shown here as plain text):
+A colorized status block (colors shown here as plain text):
 
 ```text
-[gpt-5.5 | high] | split-money-app git:(main)* | ⏱ 42m
-Context ▰▰▰▱▱▱▱▱ 30% | Usage ▰▰▰▱▱▱▱▱ 30% (resets in 3h 27m) | Weekly ▰▱▱▱▱▱▱▱ 6% (resets in 6d 12h)
-✓ shell ×12  ✓ apply_patch ×4  ✓ web_search ×2
+[gpt-5.5 | high] │ codex-hud git:(main)* │ ⏱ 42m
+Context ███░░░░░░░ 34% │ Usage ███████░░░ 71% (resets in 2h 16m) │ Weekly █░░░░░░░░░ 11% (resets in 6d 11h)
+1 AGENTS.md │ 1 skills │ 7 hooks
+✓ Edit ×15 │ ✓ Bash ×5
 24 msgs · 5 turns · local-only · no credentials read
+⏵⏵ approval: on-request · sandbox: workspace-write
 ```
 
 - **Line 1** — model + reasoning effort, project + git branch (`*` = dirty), session duration
-- **Line 2** — estimated context usage, plus your real 5-hour and weekly rate-limit usage with reset times (when Codex records them)
-- **Line 3** — recent tool calls and counts
-- **Line 4** — message/turn counts and the privacy badge
+- **Line 2** — estimated context usage, plus your real 5-hour and weekly rate-limit usage with reset times
+- **Line 3** — local assets: `AGENTS.md` docs, installed skills, configured hooks
+- **Line 4** — recent tool calls and counts
+- **Line 5** — message/turn counts and the privacy badge
+- **Line 6** — Codex approval policy and sandbox mode
 
 Bars turn yellow then red as usage climbs. Color auto-disables for non-TTY output
-and respects `NO_COLOR` and `--no-color`. `codex-hud watch` renders the same block
-live as Codex writes to your session.
+and respects `NO_COLOR` and `--no-color`. The per-prompt hook renders the same
+block above each prompt; `codex-hud watch` renders it live in a separate pane.
 
 ## What `setup` changes
 
-`setup` only ever writes the **`tui.status_line`** key in `~/.codex/config.toml`,
-and it does so safely:
+`setup` makes three scoped, reversible changes (preview them all with
+`codex-hud setup --dry-run`):
 
-- Backs up `config.toml` (timestamped, verified) before any edit.
-- Keeps every status-line item you already have; only **adds** missing core items.
-- Shows a `before → after` diff. Preview with `codex-hud setup --dry-run`.
-- Fully reversible with `codex-hud config reset`.
+1. **`~/.codex/hooks.json`** — installs a `UserPromptSubmit` hook so the HUD shows
+   above every prompt. Merges with your existing hooks; never removes them.
+2. **`~/.codex/config.toml`** — adds missing core items to the `tui.status_line`
+   key (Codex's native bottom bar). Keeps every item you already have.
+3. **Your shell rc** (`~/.zshrc` etc.) — adds a `codex` function so the HUD also
+   prints once at startup.
 
-Codex's native status line supports a fixed set of built-in items, so the richer
-view (tools, duration, estimated context, privacy badge) lives in `codex-hud
-status` / `watch`. See [docs/statusline.md](docs/statusline.md).
+Every file is backed up (timestamped, verified) before editing, and writes are
+atomic. Undo the config/statusline with `codex-hud config reset`, the hook with
+`codex-hud hooks uninstall`, and the shell function with `codex-hud shell
+uninstall`. Skip any during setup with `--no-hooks` / `--no-statusline` /
+`--no-shell`.
+
+Codex's native status line only supports a fixed set of built-in items, so the
+richer block (tools, rate limits, assets, approval) is delivered by the hook and
+by `codex-hud status` / `watch`. See [docs/statusline.md](docs/statusline.md).
 
 ## Privacy & safety
 
 codex-hud reads `~/.codex/config.toml`, `~/.codex/sessions/**/*.jsonl` (metadata
 and counts only), git metadata, `codex --version`, and its own config. It never
-reads `auth.json`, API keys, tokens, cookies, secrets, or message bodies. Any
-token/context figure is an **estimate** and labeled `est.`. Full details:
+reads `auth.json`, API keys, tokens, cookies, secrets, or message bodies. Context
+usage is an **estimate** derived from local token counts, never presented as
+official quota. Full details:
 [docs/privacy.md](docs/privacy.md) and [docs/data-sources.md](docs/data-sources.md).
 
 ## Commands
@@ -103,11 +116,10 @@ token/context figure is an **estimate** and labeled `est.`. Full details:
 | `codex-hud shell <sub>`  | `install` \| `uninstall` \| `print` (the codex function) |
 | `codex-hud hooks <sub>`  | `install` \| `uninstall` \| `status` (per-prompt HUD hook) |
 | `codex-hud skill`        | Codex skill integration (planned)                      |
-| `codex-hud hooks`        | Codex lifecycle hooks (planned)                        |
 
-Useful flags: `setup --dry-run --yes --no-statusline`;
+Useful flags: `setup --dry-run --yes --no-hooks --no-shell --no-statusline`;
 `status --json --project <path> --session <file> --no-color`;
-`watch --interval <ms>`.
+`watch --interval <ms>`; `hooks install --no-color`.
 
 ## Configuration
 
