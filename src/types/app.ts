@@ -15,11 +15,18 @@ export interface ProjectInfo {
   git: GitInfo;
 }
 
+export interface EnvironmentInfo {
+  agentsMd: number;
+  skills: number;
+  hooks: number;
+}
+
 export interface HudSnapshot {
   codex: CodexInstall;
   config?: CodexConfig;
   project: ProjectInfo;
   session?: SessionSummary;
+  environment?: EnvironmentInfo;
   generatedAt: Date;
 }
 

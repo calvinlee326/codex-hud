@@ -108,6 +108,22 @@ describe('renderSnapshot', () => {
     expect(out).toContain('local-only · no credentials read');
   });
 
+  it('renders the assets and approval lines when present', () => {
+    const out = renderSnapshot(
+      baseSnapshot({
+        environment: { agentsMd: 1, skills: 2, hooks: 7 },
+        session: {
+          ...baseSnapshot().session!,
+          approvalPolicy: 'on-request',
+          sandboxPolicy: 'workspace-write',
+        },
+      }),
+      { color: false },
+    );
+    expect(out).toContain('1 AGENTS.md │ 2 skills │ 7 hooks');
+    expect(out).toContain('⏵⏵ approval: on-request · sandbox: workspace-write');
+  });
+
   it('emits ANSI codes when color is enabled', () => {
     const out = renderSnapshot(baseSnapshot(), { color: true });
     expect(out).toContain('\x1b[');

@@ -33,6 +33,8 @@ export interface SessionSummary {
   meta?: SessionMeta;
   model?: string;
   reasoningEffort?: string;
+  approvalPolicy?: string;
+  sandboxPolicy?: string;
   startedAt?: Date;
   lastActivityAt?: Date;
   durationMs?: number;

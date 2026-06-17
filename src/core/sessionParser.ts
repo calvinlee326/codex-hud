@@ -132,6 +132,14 @@ function applyTurnContext(p: Record<string, unknown>, summary: SessionSummary): 
   if (typeof p.model === 'string') summary.model = p.model;
   const effort = p.effort ?? p.model_reasoning_effort ?? p.reasoning_effort;
   if (typeof effort === 'string') summary.reasoningEffort = effort;
+  if (typeof p.approval_policy === 'string') summary.approvalPolicy = p.approval_policy;
+  // sandbox_policy is usually an object ({ type: "workspace-write", ... }) but
+  // may be a bare string in other versions.
+  if (typeof p.sandbox_policy === 'string') {
+    summary.sandboxPolicy = p.sandbox_policy;
+  } else if (isRecord(p.sandbox_policy) && typeof p.sandbox_policy.type === 'string') {
+    summary.sandboxPolicy = p.sandbox_policy.type;
+  }
 }
 
 function applyEventMsg(p: Record<string, unknown>, summary: SessionSummary): void {

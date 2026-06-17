@@ -81,6 +81,25 @@ function toolsLine(s: HudSnapshot, p: Palette): string | undefined {
     .join(SEP);
 }
 
+function assetsLine(s: HudSnapshot, p: Palette): string | undefined {
+  const env = s.environment;
+  if (!env) return undefined;
+  const segs: string[] = [];
+  if (env.agentsMd > 0) segs.push(`${env.agentsMd} AGENTS.md`);
+  if (env.skills > 0) segs.push(`${env.skills} skills`);
+  if (env.hooks > 0) segs.push(`${env.hooks} hooks`);
+  return segs.length > 0 ? p.paint(segs.join(' │ '), 'dim') : undefined;
+}
+
+function approvalLine(s: HudSnapshot, p: Palette): string | undefined {
+  const session = s.session;
+  if (!session?.approvalPolicy && !session?.sandboxPolicy) return undefined;
+  const bits: string[] = [];
+  if (session.approvalPolicy) bits.push(`approval: ${session.approvalPolicy}`);
+  if (session.sandboxPolicy) bits.push(`sandbox: ${session.sandboxPolicy}`);
+  return p.paint(`⏵⏵ ${bits.join(' · ')}`, 'yellow');
+}
+
 function footerLine(s: HudSnapshot, p: Palette): string {
   const bits: string[] = [];
   if (s.session) {
@@ -101,10 +120,16 @@ export function renderSnapshot(snapshot: HudSnapshot, options: RenderOptions = {
   const meter = meterLine(snapshot, p);
   if (meter) lines.push(meter);
 
+  const assets = assetsLine(snapshot, p);
+  if (assets) lines.push(assets);
+
   const tools = toolsLine(snapshot, p);
   if (tools) lines.push(tools);
 
   lines.push(footerLine(snapshot, p));
+
+  const approval = approvalLine(snapshot, p);
+  if (approval) lines.push(approval);
 
   if (options.footer) lines.push(p.paint(options.footer, 'dim'));
 

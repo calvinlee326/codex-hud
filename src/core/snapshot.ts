@@ -4,6 +4,7 @@ import { readCodexConfig } from './codexConfig.js';
 import { readGitInfo } from './git.js';
 import { selectSession } from './sessionReader.js';
 import { parseSession } from './sessionParser.js';
+import { gatherEnvironment } from './environment.js';
 import { codexConfigPath, projectCodexConfigPath } from './paths.js';
 import type { HudSnapshot } from '../types/app.js';
 
@@ -21,11 +22,12 @@ export interface SnapshotOptions {
 export async function buildSnapshot(options: SnapshotOptions = {}): Promise<HudSnapshot> {
   const projectPath = options.projectPath ?? process.cwd();
 
-  const [codex, userConfig, projectConfig, git] = await Promise.all([
+  const [codex, userConfig, projectConfig, git, environment] = await Promise.all([
     options.skipCodexDetect ? Promise.resolve({ found: true }) : detectCodex(),
     readCodexConfig(codexConfigPath()).catch(() => undefined),
     readCodexConfig(projectCodexConfigPath(projectPath)).catch(() => undefined),
     readGitInfo(projectPath),
+    gatherEnvironment(projectPath),
   ]);
 
   const config = projectConfig ?? userConfig;
@@ -42,6 +44,7 @@ export async function buildSnapshot(options: SnapshotOptions = {}): Promise<HudS
       git,
     },
     session,
+    environment,
     generatedAt: new Date(),
   };
 }
