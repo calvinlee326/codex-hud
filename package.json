@@ -1,6 +1,6 @@
 {
   "name": "codex-hud-dashboard",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A safe, local-first terminal HUD and usage dashboard for OpenAI Codex CLI",
   "keywords": [
     "codex",
