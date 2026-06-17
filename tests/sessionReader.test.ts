@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { listSessions, selectSession, findRecentRateLimits } from '../src/core/sessionReader.js';
+import { listSessions, selectSession, findRecentUsage } from '../src/core/sessionReader.js';
 
 const dirs: string[] = [];
 
@@ -62,8 +62,8 @@ describe('sessionReader', () => {
   });
 });
 
-describe('findRecentRateLimits', () => {
-  it('returns rate limits from a recent session that has them', async () => {
+describe('findRecentUsage', () => {
+  it('returns rate limits and token usage from a recent session that has them', async () => {
     const root = await mkdtemp(join(tmpdir(), 'codex-hud-rl-'));
     dirs.push(root);
     const dir = join(root, '2026/06/16');
@@ -82,12 +82,13 @@ describe('findRecentRateLimits', () => {
     ];
     await writeFile(join(dir, 'rollout-2026-06-16T09-00-00-a.jsonl'), lines.join('\n') + '\n', 'utf8');
 
-    const limits = await findRecentRateLimits(root);
-    expect(limits?.primary?.usedPercent).toBe(42);
+    const usage = await findRecentUsage(root);
+    expect(usage.rateLimits?.primary?.usedPercent).toBe(42);
+    expect(usage.latestTokenUsage?.total).toBe(12);
   });
 
-  it('returns undefined when no session has rate limits', async () => {
+  it('returns empty object when no session has usage data', async () => {
     const root = await makeSessionsDir([{ rel: '2026/06/16/rollout-2026-06-16T09-00-00-a.jsonl' }]);
-    expect(await findRecentRateLimits(root)).toBeUndefined();
+    expect(await findRecentUsage(root)).toEqual({});
   });
 });

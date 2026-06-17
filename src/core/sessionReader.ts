@@ -2,7 +2,7 @@ import fg from 'fast-glob';
 import { stat } from 'node:fs/promises';
 import { codexSessionsDir } from './paths.js';
 import { peekSessionCwd, parseSession } from './sessionParser.js';
-import type { RateLimits } from '../types/session.js';
+import type { RateLimits, TokenUsage } from '../types/session.js';
 
 export interface SessionCandidate {
   filePath: string;
@@ -57,19 +57,34 @@ export async function selectSession(
   return candidates[0]?.filePath;
 }
 
+export interface RecentUsage {
+  rateLimits?: RateLimits;
+  latestTokenUsage?: TokenUsage;
+  modelContextWindow?: number;
+}
+
 /**
- * Rate limits are account-global, so a brand-new session may have none yet.
- * This scans the most recent sessions and returns the latest rate limits found,
- * letting the HUD show Usage/Weekly even on the first prompt of a new session.
+ * A brand-new session has no token_count yet, so the per-prompt hook fires
+ * before any context/usage exists. This scans the most recent sessions and
+ * returns the latest usage data found (rate limits are account-global; context
+ * is the last known value), so the HUD is populated from the first prompt and
+ * then updates once the current session records its own token_count.
  */
-export async function findRecentRateLimits(
+export async function findRecentUsage(
   sessionsDir = codexSessionsDir(),
   maxFiles = 3,
-): Promise<RateLimits | undefined> {
+): Promise<RecentUsage> {
   const candidates = await listSessions(sessionsDir);
+  const out: RecentUsage = {};
   for (const candidate of candidates.slice(0, maxFiles)) {
     const summary = await parseSession(candidate.filePath).catch(() => undefined);
-    if (summary?.rateLimits) return summary.rateLimits;
+    if (!summary) continue;
+    if (!out.rateLimits && summary.rateLimits) out.rateLimits = summary.rateLimits;
+    if (!out.latestTokenUsage && summary.latestTokenUsage) {
+      out.latestTokenUsage = summary.latestTokenUsage;
+      out.modelContextWindow = summary.modelContextWindow;
+    }
+    if (out.rateLimits && out.latestTokenUsage) break;
   }
-  return undefined;
+  return out;
 }
