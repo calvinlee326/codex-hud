@@ -8,13 +8,13 @@ export function bar(
   fraction: number | undefined,
   palette: Palette,
   color: ColorName = 'green',
-  width = 8,
+  width = 10,
 ): string {
-  if (fraction === undefined) return palette.paint('▱'.repeat(width), 'dim');
+  if (fraction === undefined) return palette.paint('░'.repeat(width), 'dim');
   const clamped = Math.max(0, Math.min(1, fraction));
   const filled = Math.round(clamped * width);
-  const full = palette.paint('▰'.repeat(filled), color);
-  const empty = palette.paint('▱'.repeat(width - filled), 'dim');
+  const full = palette.paint('█'.repeat(filled), color);
+  const empty = palette.paint('░'.repeat(width - filled), 'dim');
   return `${full}${empty}`;
 }
 

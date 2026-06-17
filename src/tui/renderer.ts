@@ -12,7 +12,7 @@ export interface RenderOptions {
   footer?: string;
 }
 
-const SEP = '  ';
+const SEP = ' │ ';
 
 function pct(fraction: number | undefined): string {
   return fraction === undefined ? 'n/a' : `${Math.round(fraction * 100)}%`;
@@ -40,7 +40,7 @@ function headerLine(s: HudSnapshot, p: Palette): string {
   if (s.session?.durationMs !== undefined) {
     parts.push(p.paint(`⏱ ${formatDuration(s.session.durationMs)}`, 'dim'));
   }
-  return parts.join(p.paint(' | ', 'dim'));
+  return parts.join(p.paint(' │ ', 'dim'));
 }
 
 function usageSegment(label: string, w: RateWindow | undefined, p: Palette): string | undefined {
@@ -69,7 +69,7 @@ function meterLine(s: HudSnapshot, p: Palette): string | undefined {
   if (primary) segments.push(primary);
   if (weekly) segments.push(weekly);
 
-  return segments.length > 0 ? segments.join(p.paint(' | ', 'dim')) : undefined;
+  return segments.length > 0 ? segments.join(p.paint(' │ ', 'dim')) : undefined;
 }
 
 function toolsLine(s: HudSnapshot, p: Palette): string | undefined {

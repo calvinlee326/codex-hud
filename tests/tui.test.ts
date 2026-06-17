@@ -53,11 +53,11 @@ describe('format', () => {
 
 describe('bar', () => {
   it('renders a dim empty bar for unknown', () => {
-    expect(bar(undefined, plain, 'green', 4)).toBe('▱▱▱▱');
+    expect(bar(undefined, plain, 'green', 4)).toBe('░░░░');
   });
   it('fills proportionally and clamps', () => {
-    expect(bar(0.5, plain, 'green', 4)).toBe('▰▰▱▱');
-    expect(bar(2, plain, 'green', 4)).toBe('▰▰▰▰');
+    expect(bar(0.5, plain, 'green', 4)).toBe('██░░');
+    expect(bar(2, plain, 'green', 4)).toBe('████');
   });
   it('escalates severity color with usage', () => {
     expect(severityColor(0.3)).toBe('green');
