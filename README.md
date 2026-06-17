@@ -19,23 +19,23 @@ codex-hud watch     # optional: richer live dashboard in a second pane
 
 ## What it shows
 
-```text
-Codex HUD Dashboard
+A compact, colorized status block (colors shown here as plain text):
 
-Codex     v0.140.0
-Project   split-money-app
-Git       main *
-Model     gpt-5.5
-Reasoning high
-Session   latest session found
-Tools     shell x12  apply_patch x4  web_search x2
-Duration  42m
-Context   [█████───────────] est. 30%
-Privacy   local-only, no credentials read
+```text
+[gpt-5.5 | high] | split-money-app git:(main)* | ⏱ 42m
+Context ▰▰▰▱▱▱▱▱ 30% | Usage ▰▰▰▱▱▱▱▱ 30% (resets in 3h 27m) | Weekly ▰▱▱▱▱▱▱▱ 6% (resets in 6d 12h)
+✓ shell ×12  ✓ apply_patch ×4  ✓ web_search ×2
+24 msgs · 5 turns · local-only · no credentials read
 ```
 
-`codex-hud watch` renders the same view and refreshes as Codex writes to your
-session.
+- **Line 1** — model + reasoning effort, project + git branch (`*` = dirty), session duration
+- **Line 2** — estimated context usage, plus your real 5-hour and weekly rate-limit usage with reset times (when Codex records them)
+- **Line 3** — recent tool calls and counts
+- **Line 4** — message/turn counts and the privacy badge
+
+Bars turn yellow then red as usage climbs. Color auto-disables for non-TTY output
+and respects `NO_COLOR` and `--no-color`. `codex-hud watch` renders the same block
+live as Codex writes to your session.
 
 ## What `setup` changes
 

@@ -1,6 +1,12 @@
 import { createReadStream } from 'node:fs';
 import { createInterface } from 'node:readline';
-import type { SessionSummary, ToolUseCount, TokenUsage } from '../types/session.js';
+import type {
+  SessionSummary,
+  ToolUseCount,
+  TokenUsage,
+  RateLimits,
+  RateWindow,
+} from '../types/session.js';
 
 export interface ParseOptions {
   maxLines?: number;
@@ -163,6 +169,28 @@ function applyTokenCount(p: Record<string, unknown>, summary: SessionSummary): v
   captureContextWindow(info, summary);
   const usage = parseTokenUsage(info);
   if (usage) summary.latestTokenUsage = usage;
+  const limits = parseRateLimits(p.rate_limits);
+  if (limits) summary.rateLimits = limits;
+}
+
+function parseRateLimits(v: unknown): RateLimits | undefined {
+  if (!isRecord(v)) return undefined;
+  const primary = parseRateWindow(v.primary);
+  const secondary = parseRateWindow(v.secondary);
+  if (!primary && !secondary) return undefined;
+  return { primary, secondary };
+}
+
+function parseRateWindow(v: unknown): RateWindow | undefined {
+  if (!isRecord(v)) return undefined;
+  const usedPercent = numOrUndef(v.used_percent);
+  if (usedPercent === undefined) return undefined;
+  const resetsAtSec = numOrUndef(v.resets_at);
+  return {
+    usedPercent,
+    windowMinutes: numOrUndef(v.window_minutes),
+    resetsAt: resetsAtSec ? new Date(resetsAtSec * 1000) : undefined,
+  };
 }
 
 function captureContextWindow(p: Record<string, unknown>, summary: SessionSummary): void {

@@ -25,7 +25,7 @@ export async function runStatus(flags: StatusFlags): Promise<number> {
     return 0;
   }
 
-  process.stdout.write(renderSnapshot(snapshot, { config: appConfig, showBar: true }) + '\n');
+  process.stdout.write(renderSnapshot(snapshot, { config: appConfig, color: flags.color }) + '\n');
   return 0;
 }
 
@@ -55,6 +55,7 @@ export function toJson(snapshot: HudSnapshot) {
             model,
             snapshot.session.modelContextWindow,
           ),
+          rateLimits: snapshot.session.rateLimits,
           truncated: snapshot.session.truncated,
         }
       : null,

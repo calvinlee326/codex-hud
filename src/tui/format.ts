@@ -12,6 +12,20 @@ export function formatPercent(fraction: number | undefined): string {
   return `est. ${Math.round(fraction * 100)}%`;
 }
 
+/** Formats a future reset time as a compact "resets in 3h 27m" string. */
+export function formatResetIn(resetsAt: Date | undefined, now = new Date()): string | undefined {
+  if (!resetsAt) return undefined;
+  const ms = resetsAt.getTime() - now.getTime();
+  if (ms <= 0) return 'resets now';
+  const totalMin = Math.floor(ms / 60_000);
+  const days = Math.floor(totalMin / 1440);
+  const hours = Math.floor((totalMin % 1440) / 60);
+  const mins = totalMin % 60;
+  if (days > 0) return `resets in ${days}d ${hours}h`;
+  if (hours > 0) return `resets in ${hours}h ${mins}m`;
+  return `resets in ${mins}m`;
+}
+
 export function truncate(value: string, max: number): string {
   if (value.length <= max) return value;
   if (max <= 1) return value.slice(0, max);

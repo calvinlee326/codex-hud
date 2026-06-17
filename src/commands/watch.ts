@@ -26,9 +26,11 @@ export async function runWatch(flags: WatchFlags): Promise<number> {
       const sessionPath =
         flags.session ?? appConfig.sessionPathOverride ?? (await selectSession(projectPath));
       const snapshot = await buildSnapshot({ projectPath, sessionPath });
-      const output =
-        renderSnapshot(snapshot, { config: appConfig, title: 'Codex HUD', showBar: true }) +
-        `\n\nUpdated ${new Date().toLocaleTimeString()}  ·  Ctrl+C to exit`;
+      const output = renderSnapshot(snapshot, {
+        config: appConfig,
+        color: true,
+        footer: `Updated ${new Date().toLocaleTimeString()} · Ctrl+C to exit`,
+      });
       if (output !== lastOutput) {
         lastOutput = output;
         process.stdout.write('\x1b[2J\x1b[H' + output + '\n');

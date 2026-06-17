@@ -17,6 +17,17 @@ export interface ToolUseCount {
   count: number;
 }
 
+export interface RateWindow {
+  usedPercent: number;
+  windowMinutes?: number;
+  resetsAt?: Date;
+}
+
+export interface RateLimits {
+  primary?: RateWindow;
+  secondary?: RateWindow;
+}
+
 export interface SessionSummary {
   filePath: string;
   meta?: SessionMeta;
@@ -30,6 +41,7 @@ export interface SessionSummary {
   toolCounts: ToolUseCount[];
   latestTokenUsage?: TokenUsage;
   modelContextWindow?: number;
+  rateLimits?: RateLimits;
   turnCount: number;
   linesRead: number;
   malformedLines: number;

@@ -1,79 +1,112 @@
-import type { HudSnapshot } from '../types/app.js';
-import type { AppConfig } from '../types/app.js';
+import type { HudSnapshot, AppConfig } from '../types/app.js';
+import type { RateWindow } from '../types/session.js';
 import { estimateContextUsage } from '../core/contextWindow.js';
-import { PRIVACY_STATEMENT } from '../core/privacy.js';
-import { formatDuration, formatPercent, orNa, orUnknown, renderRows, truncate } from './format.js';
-import { progressBar } from './bars.js';
+import { formatDuration, formatResetIn, orUnknown, truncate } from './format.js';
+import { bar, severityColor } from './bars.js';
+import { createPalette, colorEnabled, type Palette } from './colors.js';
 
 export interface RenderOptions {
   config?: AppConfig;
-  title?: string;
-  showBar?: boolean;
+  color?: boolean;
+  /** Footer line appended in watch mode. */
+  footer?: string;
 }
 
-function gitCell(snapshot: HudSnapshot): string {
-  const git = snapshot.project.git;
-  if (!git.isRepo) return 'not a repo';
+const SEP = '  ';
+
+function pct(fraction: number | undefined): string {
+  return fraction === undefined ? 'n/a' : `${Math.round(fraction * 100)}%`;
+}
+
+function modelSegment(s: HudSnapshot, p: Palette): string {
+  const model = orUnknown(s.session?.model ?? s.config?.model);
+  const effort = s.session?.reasoningEffort ?? s.config?.modelReasoningEffort;
+  const inner = effort ? `${model} | ${effort}` : model;
+  return p.paint(`[${inner}]`, 'cyan', 'bold');
+}
+
+function dirSegment(s: HudSnapshot, p: Palette): string {
+  const dir = p.paint(truncate(s.project.name, 30), 'cyan');
+  const git = s.project.git;
+  if (!git.isRepo) return dir;
   const branch = orUnknown(git.branch);
-  const dirty = git.dirty ? ' *' : '';
-  let ahead = '';
-  if (git.ahead) ahead += ` ↑${git.ahead}`;
-  if (git.behind) ahead += ` ↓${git.behind}`;
-  return `${branch}${dirty}${ahead}`;
+  const dirty = git.dirty ? p.paint('*', 'yellow') : '';
+  return `${dir} ${p.paint('git:', 'dim')}${p.paint(`(${branch})`, 'magenta')}${dirty}`;
 }
 
-function toolsCell(snapshot: HudSnapshot): string {
-  const tools = snapshot.session?.toolCounts ?? [];
-  if (tools.length === 0) return 'none';
-  return tools
-    .slice(0, 5)
-    .map((t) => `${t.name} x${t.count}`)
-    .join('  ');
-}
-
-function modelCell(snapshot: HudSnapshot): string {
-  const sessionModel = snapshot.session?.model;
-  const configModel = snapshot.config?.model;
-  return orUnknown(sessionModel ?? configModel);
-}
-
-function reasoningCell(snapshot: HudSnapshot): string {
-  return orUnknown(snapshot.session?.reasoningEffort ?? snapshot.config?.modelReasoningEffort);
-}
-
-/** Renders the one-shot HUD snapshot as plain text. */
-export function renderSnapshot(snapshot: HudSnapshot, options: RenderOptions = {}): string {
-  const config = options.config;
-  const title = options.title ?? 'Codex HUD Dashboard';
-  const model = modelCell(snapshot);
-
-  const rows: Array<[string, string]> = [];
-  rows.push(['Codex', snapshot.codex.found ? `v${orNa(snapshot.codex.version)}` : 'not found']);
-  rows.push(['Project', truncate(snapshot.project.name, 40)]);
-
-  if (!config || config.showGit) rows.push(['Git', gitCell(snapshot)]);
-
-  rows.push(['Model', model]);
-  rows.push(['Reasoning', reasoningCell(snapshot)]);
-
-  if (snapshot.session) {
-    rows.push(['Session', 'latest session found']);
-    if (!config || config.showTools) rows.push(['Tools', toolsCell(snapshot)]);
-    rows.push(['Duration', formatDuration(snapshot.session.durationMs)]);
-    if (!config || config.showEstimatedTokens) {
-      const usage = estimateContextUsage(
-        snapshot.session.latestTokenUsage,
-        model,
-        snapshot.session.modelContextWindow,
-      );
-      const bar = options.showBar ? `${progressBar(usage)} ` : '';
-      rows.push(['Context', `${bar}${formatPercent(usage)}`]);
-    }
-  } else {
-    rows.push(['Session', 'no session found']);
+function headerLine(s: HudSnapshot, p: Palette): string {
+  const parts = [modelSegment(s, p), dirSegment(s, p)];
+  if (!s.codex.found) parts.push(p.paint('codex not found', 'red'));
+  if (s.session?.durationMs !== undefined) {
+    parts.push(p.paint(`⏱ ${formatDuration(s.session.durationMs)}`, 'dim'));
   }
+  return parts.join(p.paint(' | ', 'dim'));
+}
 
-  rows.push(['Privacy', PRIVACY_STATEMENT]);
+function usageSegment(label: string, w: RateWindow | undefined, p: Palette): string | undefined {
+  if (!w) return undefined;
+  const frac = w.usedPercent / 100;
+  const color = severityColor(frac);
+  const reset = formatResetIn(w.resetsAt);
+  const resetStr = reset ? p.paint(` (${reset})`, 'dim') : '';
+  return `${p.paint(label, 'dim')} ${bar(frac, p, color)} ${Math.round(w.usedPercent)}%${resetStr}`;
+}
 
-  return `${title}\n\n${renderRows(rows)}`;
+function meterLine(s: HudSnapshot, p: Palette): string | undefined {
+  const segments: string[] = [];
+  const model = s.session?.model ?? s.config?.model;
+  const ctx = estimateContextUsage(
+    s.session?.latestTokenUsage,
+    model,
+    s.session?.modelContextWindow,
+  );
+  if (ctx !== undefined) {
+    segments.push(`${p.paint('Context', 'dim')} ${bar(ctx, p, severityColor(ctx))} ${pct(ctx)}`);
+  }
+  const limits = s.session?.rateLimits;
+  const primary = usageSegment('Usage', limits?.primary, p);
+  const weekly = usageSegment('Weekly', limits?.secondary, p);
+  if (primary) segments.push(primary);
+  if (weekly) segments.push(weekly);
+
+  return segments.length > 0 ? segments.join(p.paint(' | ', 'dim')) : undefined;
+}
+
+function toolsLine(s: HudSnapshot, p: Palette): string | undefined {
+  const tools = s.session?.toolCounts ?? [];
+  if (tools.length === 0) return undefined;
+  return tools
+    .slice(0, 6)
+    .map((t) => `${p.paint('✓', 'green')} ${t.name} ${p.paint(`×${t.count}`, 'dim')}`)
+    .join(SEP);
+}
+
+function footerLine(s: HudSnapshot, p: Palette): string {
+  const bits: string[] = [];
+  if (s.session) {
+    bits.push(`${s.session.userMessageCount + s.session.agentMessageCount} msgs`);
+    if (s.session.turnCount > 0) bits.push(`${s.session.turnCount} turns`);
+  } else {
+    bits.push('no session found');
+  }
+  bits.push('local-only · no credentials read');
+  return p.paint(bits.join(' · '), 'dim');
+}
+
+/** Renders the compact, colorized HUD. */
+export function renderSnapshot(snapshot: HudSnapshot, options: RenderOptions = {}): string {
+  const p = createPalette(colorEnabled(options.color));
+  const lines: string[] = [headerLine(snapshot, p)];
+
+  const meter = meterLine(snapshot, p);
+  if (meter) lines.push(meter);
+
+  const tools = toolsLine(snapshot, p);
+  if (tools) lines.push(tools);
+
+  lines.push(footerLine(snapshot, p));
+
+  if (options.footer) lines.push(p.paint(options.footer, 'dim'));
+
+  return lines.join('\n');
 }

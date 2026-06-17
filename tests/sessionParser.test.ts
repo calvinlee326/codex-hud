@@ -52,6 +52,10 @@ const LINES = [
         total_token_usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
         model_context_window: 1000,
       },
+      rate_limits: {
+        primary: { used_percent: 30, window_minutes: 300, resets_at: 1767840127 },
+        secondary: { used_percent: 6, window_minutes: 10080, resets_at: 1768426927 },
+      },
     },
   },
 ];
@@ -82,6 +86,9 @@ describe('parseSession', () => {
     expect(s.toolCounts).toEqual([{ name: 'shell', count: 2 }]);
     expect(s.latestTokenUsage?.total).toBe(150);
     expect(s.modelContextWindow).toBe(1000);
+    expect(s.rateLimits?.primary?.usedPercent).toBe(30);
+    expect(s.rateLimits?.secondary?.usedPercent).toBe(6);
+    expect(s.rateLimits?.primary?.resetsAt).toBeInstanceOf(Date);
     expect(s.durationMs).toBe(5 * 60 * 1000);
   });
 
