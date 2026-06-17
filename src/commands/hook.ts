@@ -1,4 +1,5 @@
 import { buildSnapshot } from '../core/snapshot.js';
+import { findRecentRateLimits } from '../core/sessionReader.js';
 import { renderSnapshot } from '../tui/renderer.js';
 import { readAppConfig } from '../config/appConfig.js';
 
@@ -25,6 +26,14 @@ export async function runHook(flags: HookFlags): Promise<number> {
       sessionPath: transcriptPath,
       skipCodexDetect: true,
     });
+
+    // A brand-new session has no token_count yet; backfill account-global rate
+    // limits from a recent session so Usage/Weekly show from the first prompt.
+    if (snapshot.session && !snapshot.session.rateLimits) {
+      const recent = await findRecentRateLimits();
+      if (recent) snapshot.session.rateLimits = recent;
+    }
+
     const hud = renderSnapshot(snapshot, { config: appConfig, color: flags.color ?? true });
     process.stdout.write(JSON.stringify({ systemMessage: hud }) + '\n');
   } catch {

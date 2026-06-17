@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { listSessions, selectSession } from '../src/core/sessionReader.js';
+import { listSessions, selectSession, findRecentRateLimits } from '../src/core/sessionReader.js';
 
 const dirs: string[] = [];
 
@@ -59,5 +59,35 @@ describe('sessionReader', () => {
   it('returns undefined when there are no sessions', async () => {
     const root = await makeSessionsDir([]);
     expect(await selectSession('/home/u/proj', root)).toBeUndefined();
+  });
+});
+
+describe('findRecentRateLimits', () => {
+  it('returns rate limits from a recent session that has them', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'codex-hud-rl-'));
+    dirs.push(root);
+    const dir = join(root, '2026/06/16');
+    await mkdir(dir, { recursive: true });
+    const lines = [
+      JSON.stringify({ timestamp: '2026-06-16T00:00:00.000Z', type: 'session_meta', payload: { cwd: '/x' } }),
+      JSON.stringify({
+        timestamp: '2026-06-16T00:01:00.000Z',
+        type: 'event_msg',
+        payload: {
+          type: 'token_count',
+          info: { last_token_usage: { input_tokens: 10, total_tokens: 12 } },
+          rate_limits: { primary: { used_percent: 42, resets_at: 1767840127 } },
+        },
+      }),
+    ];
+    await writeFile(join(dir, 'rollout-2026-06-16T09-00-00-a.jsonl'), lines.join('\n') + '\n', 'utf8');
+
+    const limits = await findRecentRateLimits(root);
+    expect(limits?.primary?.usedPercent).toBe(42);
+  });
+
+  it('returns undefined when no session has rate limits', async () => {
+    const root = await makeSessionsDir([{ rel: '2026/06/16/rollout-2026-06-16T09-00-00-a.jsonl' }]);
+    expect(await findRecentRateLimits(root)).toBeUndefined();
   });
 });

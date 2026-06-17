@@ -1,7 +1,8 @@
 import fg from 'fast-glob';
 import { stat } from 'node:fs/promises';
 import { codexSessionsDir } from './paths.js';
-import { peekSessionCwd } from './sessionParser.js';
+import { peekSessionCwd, parseSession } from './sessionParser.js';
+import type { RateLimits } from '../types/session.js';
 
 export interface SessionCandidate {
   filePath: string;
@@ -54,4 +55,21 @@ export async function selectSession(
   }
 
   return candidates[0]?.filePath;
+}
+
+/**
+ * Rate limits are account-global, so a brand-new session may have none yet.
+ * This scans the most recent sessions and returns the latest rate limits found,
+ * letting the HUD show Usage/Weekly even on the first prompt of a new session.
+ */
+export async function findRecentRateLimits(
+  sessionsDir = codexSessionsDir(),
+  maxFiles = 3,
+): Promise<RateLimits | undefined> {
+  const candidates = await listSessions(sessionsDir);
+  for (const candidate of candidates.slice(0, maxFiles)) {
+    const summary = await parseSession(candidate.filePath).catch(() => undefined);
+    if (summary?.rateLimits) return summary.rateLimits;
+  }
+  return undefined;
 }
