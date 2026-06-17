@@ -27,13 +27,9 @@ export function estimateContextUsage(
   knownWindow?: number,
 ): number | undefined {
   const window = knownWindow ?? contextWindowFor(model);
-  const used = usage?.total ?? sumUsage(usage);
+  // Context fullness is the prompt loaded for the latest request (input tokens),
+  // not cumulative totals. Fall back to total only when input is unavailable.
+  const used = usage?.input ?? usage?.total;
   if (!window || used === undefined) return undefined;
   return Math.min(1, used / window);
-}
-
-function sumUsage(usage: TokenUsage | undefined): number | undefined {
-  if (!usage) return undefined;
-  const parts = [usage.input, usage.output].filter((v): v is number => v !== undefined);
-  return parts.length > 0 ? parts.reduce((a, b) => a + b, 0) : undefined;
 }

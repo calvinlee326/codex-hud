@@ -50,6 +50,7 @@ const LINES = [
       type: 'token_count',
       info: {
         total_token_usage: { input_tokens: 100, output_tokens: 50, total_tokens: 150 },
+        last_token_usage: { input_tokens: 40, output_tokens: 5, total_tokens: 45 },
         model_context_window: 1000,
       },
       rate_limits: {
@@ -84,7 +85,8 @@ describe('parseSession', () => {
     expect(s.userMessageCount).toBe(1);
     expect(s.agentMessageCount).toBe(1);
     expect(s.toolCounts).toEqual([{ name: 'shell', count: 2 }]);
-    expect(s.latestTokenUsage?.total).toBe(150);
+    expect(s.latestTokenUsage?.total).toBe(45); // prefers last_token_usage
+    expect(s.latestTokenUsage?.input).toBe(40);
     expect(s.modelContextWindow).toBe(1000);
     expect(s.rateLimits?.primary?.usedPercent).toBe(30);
     expect(s.rateLimits?.secondary?.usedPercent).toBe(6);

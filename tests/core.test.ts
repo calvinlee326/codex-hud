@@ -20,8 +20,11 @@ describe('contextWindow', () => {
     expect(estimateContextUsage({ total: 10 }, 'mystery')).toBeUndefined();
   });
 
-  it('sums input and output when total is absent', () => {
-    expect(estimateContextUsage({ input: 100, output: 100 }, undefined, 1000)).toBe(0.2);
+  it('uses input tokens (context loaded), not cumulative totals', () => {
+    // input is the prompt loaded into the window; output should not inflate it
+    expect(estimateContextUsage({ input: 100, output: 900, total: 1000 }, undefined, 1000)).toBe(
+      0.1,
+    );
   });
 });
 

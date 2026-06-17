@@ -213,14 +213,20 @@ function friendlyToolName(type: string): string {
 }
 
 function parseTokenUsage(info: Record<string, unknown>): TokenUsage | undefined {
-  // Codex nests usage under info.total_token_usage (with last_token_usage as the
-  // most recent turn). Fall back to flat fields for older/other shapes.
-  const total = isRecord(info.total_token_usage) ? info.total_token_usage : info;
+  // Prefer last_token_usage: its input_tokens is the prompt actually loaded into
+  // the context window for the most recent request, which is what "context used"
+  // means. total_token_usage is cumulative across the whole session (it sums
+  // every turn) and would exceed the window, so it's only a fallback.
+  const src = isRecord(info.last_token_usage)
+    ? info.last_token_usage
+    : isRecord(info.total_token_usage)
+      ? info.total_token_usage
+      : info;
   const usage: TokenUsage = {
-    input: numOrUndef(total.input_tokens ?? total.input),
-    output: numOrUndef(total.output_tokens ?? total.output),
-    reasoning: numOrUndef(total.reasoning_output_tokens ?? total.reasoning_tokens),
-    total: numOrUndef(total.total_tokens ?? total.total),
+    input: numOrUndef(src.input_tokens ?? src.input),
+    output: numOrUndef(src.output_tokens ?? src.output),
+    reasoning: numOrUndef(src.reasoning_output_tokens ?? src.reasoning_tokens),
+    total: numOrUndef(src.total_tokens ?? src.total),
   };
   const hasAny = Object.values(usage).some((v) => v !== undefined);
   return hasAny ? usage : undefined;
