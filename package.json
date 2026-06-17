@@ -12,6 +12,15 @@
     "terminal"
   ],
   "license": "MIT",
+  "author": "Chun-Cheng Lee <calvinlee326@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/calvinlee326/codex-hud.git"
+  },
+  "homepage": "https://github.com/calvinlee326/codex-hud#readme",
+  "bugs": {
+    "url": "https://github.com/calvinlee326/codex-hud/issues"
+  },
   "type": "module",
   "bin": {
     "codex-hud": "dist/cli.js"
