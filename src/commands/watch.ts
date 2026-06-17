@@ -11,13 +11,17 @@ export interface WatchFlags {
   interval?: number;
 }
 
+const ENTER_ALT_SCREEN = '\x1b[?1049h\x1b[?25l';
+const LEAVE_ALT_SCREEN = '\x1b[?25h\x1b[?1049l';
+const HOME_AND_CLEAR = '\x1b[H\x1b[2J';
+
 export async function runWatch(flags: WatchFlags): Promise<number> {
   const appConfig = await readAppConfig();
   const projectPath = flags.project ?? process.cwd();
   const intervalMs = flags.interval ?? appConfig.refreshIntervalMs;
+  const isTty = Boolean(process.stdout.isTTY);
 
   let pending = false;
-  let lastOutput = '';
 
   const render = async () => {
     if (pending) return;
@@ -28,18 +32,18 @@ export async function runWatch(flags: WatchFlags): Promise<number> {
       const snapshot = await buildSnapshot({ projectPath, sessionPath });
       const output = renderSnapshot(snapshot, {
         config: appConfig,
-        color: true,
+        color: isTty,
         footer: `Updated ${new Date().toLocaleTimeString()} · Ctrl+C to exit`,
       });
-      if (output !== lastOutput) {
-        lastOutput = output;
-        process.stdout.write('\x1b[2J\x1b[H' + output + '\n');
-      }
+      // On a TTY, repaint in place from the top of the alternate screen so the
+      // HUD never scrolls. Otherwise (piped output) just append each frame.
+      process.stdout.write(isTty ? `${HOME_AND_CLEAR}${output}\n` : `${output}\n`);
     } finally {
       pending = false;
     }
   };
 
+  if (isTty) process.stdout.write(ENTER_ALT_SCREEN);
   await render();
 
   const watcher = chokidar.watch(codexSessionsDir(), {
@@ -55,10 +59,13 @@ export async function runWatch(flags: WatchFlags): Promise<number> {
   const timer = setInterval(() => void render(), intervalMs);
 
   return await new Promise<number>((resolve) => {
+    let done = false;
     const shutdown = () => {
+      if (done) return;
+      done = true;
       clearInterval(timer);
       void watcher.close();
-      process.stdout.write('\n');
+      if (isTty) process.stdout.write(LEAVE_ALT_SCREEN);
       resolve(0);
     };
     process.on('SIGINT', shutdown);
