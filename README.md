@@ -13,7 +13,7 @@ the easiest possible Codex experience: install it, run `setup` once, then keep
 using `codex` exactly as you do today.
 
 <p align="center">
-  <img src="docs/demo.png" alt="codex-hud showing model, context, usage, rate limits, assets, and approval mode above a Codex session" width="820">
+  <img src="docs/demo.gif" alt="codex-hud showing model, context, usage, rate limits, assets, and approval mode above a Codex session" width="820">
 </p>
 
 <!-- To update this image: take a terminal screenshot of `codex` starting with the
