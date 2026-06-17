@@ -6,7 +6,8 @@ import { runWatch } from './commands/watch.js';
 import { runDoctor } from './commands/doctor.js';
 import { runConfig, type ConfigSub } from './commands/config.js';
 import { runSkillInstall } from './commands/skill.js';
-import { runHooksInstall } from './commands/hooks.js';
+import { runHooks, type HooksSub } from './commands/hooks.js';
+import { runHook } from './commands/hook.js';
 import { runShell, type ShellSub } from './commands/shell.js';
 
 const cli = cac('codex-hud');
@@ -26,6 +27,7 @@ cli
   .option('--yes', 'Skip confirmation prompts')
   .option('--no-statusline', 'Do not modify the native Codex statusline')
   .option('--no-shell', 'Do not add the codex shell function')
+  .option('--no-hooks', 'Do not install the per-prompt HUD hook')
   .option('--mode <mode>', 'Setup mode: basic | dashboard', { default: 'dashboard' })
   .action((opts) =>
     run(() =>
@@ -34,6 +36,7 @@ cli
         yes: opts.yes,
         statusline: opts.statusline,
         shell: opts.shell,
+        hooks: opts.hooks,
         mode: opts.mode,
       }),
     ),
@@ -104,8 +107,23 @@ cli
   .action(() => run(runSkillInstall));
 
 cli
-  .command('hooks [sub]', 'Codex lifecycle hooks (planned)')
-  .action(() => run(runHooksInstall));
+  .command('hooks [sub]', 'Show the HUD on every prompt: install | uninstall | status')
+  .option('--no-color', 'Render the per-prompt HUD without ANSI color')
+  .action((sub: string | undefined, opts: { color?: boolean }) => {
+    const valid: HooksSub[] = ['install', 'uninstall', 'status'];
+    const chosen = (sub ?? 'install') as HooksSub;
+    if (!valid.includes(chosen)) {
+      process.stderr.write(`Unknown hooks subcommand: ${sub}. Use install | uninstall | status.\n`);
+      process.exitCode = 1;
+      return;
+    }
+    return run(() => runHooks(chosen, { color: opts.color }));
+  });
+
+cli
+  .command('hook', 'Internal: UserPromptSubmit handler invoked by Codex')
+  .option('--no-color', 'Render without ANSI color')
+  .action((opts: { color?: boolean }) => run(() => runHook({ color: opts.color })));
 
 cli.help();
 cli.version('0.1.0');

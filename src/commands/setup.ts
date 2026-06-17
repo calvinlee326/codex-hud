@@ -7,7 +7,8 @@ import { listSessions } from '../core/sessionReader.js';
 import { backupFile, atomicWrite, fileExists } from '../core/backup.js';
 import { planStatusLine, applyStatusLineEdit } from '../core/codexStatusline.js';
 import { detectShell, installShellIntegration } from '../core/shellInit.js';
-import { codexConfigPath, codexSessionsDir, tildify } from '../core/paths.js';
+import { installPromptHook, hookCommand } from '../core/codexHooks.js';
+import { codexConfigPath, codexSessionsDir, codexHooksPath, tildify } from '../core/paths.js';
 import { readAppConfig, writeAppConfig } from '../config/appConfig.js';
 import { ConfigParseError } from '../core/errors.js';
 import type { StatusLineSetting } from '../types/codex.js';
@@ -17,12 +18,14 @@ export interface SetupFlags {
   yes?: boolean;
   statusline?: boolean; // --no-statusline => false
   shell?: boolean; // --no-shell => false
+  hooks?: boolean; // --no-hooks => false
   mode?: 'basic' | 'dashboard';
 }
 
 export async function runSetup(flags: SetupFlags): Promise<number> {
   const wantStatusline = flags.statusline !== false;
   const wantShell = flags.shell !== false;
+  const wantHooks = flags.hooks !== false;
   const shellTarget = detectShell();
   process.stdout.write('Codex HUD Setup\n\n');
 
@@ -76,11 +79,18 @@ export async function runSetup(flags: SetupFlags): Promise<number> {
     process.stdout.write('  Your existing items are preserved; codex-hud only adds missing core items.\n');
   }
 
+  if (wantHooks) {
+    process.stdout.write(
+      `\n  Prompt hook: add a UserPromptSubmit hook to ${tildify(codexHooksPath())}\n`,
+    );
+    process.stdout.write('  so the HUD appears above every prompt inside Codex (the recommended view).\n');
+  }
+
   if (wantShell) {
     process.stdout.write(
       `\n  Shell integration (${shellTarget.shell}): add a 'codex' function to ${tildify(shellTarget.rcPath)}\n`,
     );
-    process.stdout.write('  so typing `codex` shows the colorized HUD, then launches Codex as usual.\n');
+    process.stdout.write('  so typing `codex` shows the HUD once at startup too.\n');
   }
 
   if (flags.dryRun) {
@@ -127,6 +137,18 @@ export async function runSetup(flags: SetupFlags): Promise<number> {
   await writeAppConfig(appConfig);
   process.stdout.write('  codex-hud config saved.\n');
 
+  // 5b. Install per-prompt hook
+  let hookInstalled = false;
+  if (wantHooks) {
+    try {
+      await installPromptHook(hookCommand(true));
+      hookInstalled = true;
+      process.stdout.write(`  Prompt hook added to ${tildify(codexHooksPath())}.\n`);
+    } catch (err) {
+      process.stderr.write(`  Could not install prompt hook: ${(err as Error).message}\n`);
+    }
+  }
+
   // 6. Install shell integration
   let shellInstalled = false;
   if (wantShell) {
@@ -145,15 +167,17 @@ export async function runSetup(flags: SetupFlags): Promise<number> {
 
   // 7. Next step
   process.stdout.write('\n  Setup complete.\n');
+  if (hookInstalled) {
+    process.stdout.write('\n  The HUD will appear above every prompt inside Codex.\n');
+    process.stdout.write('  Restart Codex (or start a new session) for the hook to load.\n');
+  }
   if (shellInstalled) {
     process.stdout.write(
-      `\n  Reload your shell, then just run codex:\n\n      source ${tildify(shellTarget.rcPath)}\n      codex\n\n`,
+      `\n  Reload your shell so 'codex' also shows the HUD at startup:\n\n      source ${tildify(shellTarget.rcPath)}\n`,
     );
-    process.stdout.write('  The HUD prints each time you start Codex. For a live view:\n\n      codex-hud watch\n\n');
-  } else {
-    process.stdout.write('\n  Open Codex normally:\n\n      codex\n\n');
-    process.stdout.write('  For the live dashboard:\n\n      codex-hud watch\n\n');
   }
+  process.stdout.write('\n  Then just run:\n\n      codex\n\n');
+  process.stdout.write('  For a separate live dashboard:  codex-hud watch\n\n');
   return 0;
 }
 

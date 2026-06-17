@@ -10,6 +10,8 @@ import type { HudSnapshot } from '../types/app.js';
 export interface SnapshotOptions {
   projectPath?: string;
   sessionPath?: string;
+  /** Skip spawning `codex --version` (used by the per-prompt hook for speed). */
+  skipCodexDetect?: boolean;
 }
 
 /**
@@ -20,7 +22,7 @@ export async function buildSnapshot(options: SnapshotOptions = {}): Promise<HudS
   const projectPath = options.projectPath ?? process.cwd();
 
   const [codex, userConfig, projectConfig, git] = await Promise.all([
-    detectCodex(),
+    options.skipCodexDetect ? Promise.resolve({ found: true }) : detectCodex(),
     readCodexConfig(codexConfigPath()).catch(() => undefined),
     readCodexConfig(projectCodexConfigPath(projectPath)).catch(() => undefined),
     readGitInfo(projectPath),

@@ -12,17 +12,26 @@ install it, run `setup` once, then keep using `codex` exactly as you do today.
 
 ```bash
 npm install -g codex-hud-dashboard
-codex-hud setup        # detect Codex, curate native status line, add the codex shell function
+codex-hud setup        # detect Codex; install the per-prompt hook, shell function, status line
 source ~/.zshrc        # reload your shell (or open a new terminal)
-codex                  # prints the colorized HUD, then opens Codex as usual
+codex                  # HUD shows above every prompt inside Codex
 codex-hud watch        # optional: live dashboard in a second pane
 ```
 
-After `setup`, typing **`codex`** shows the HUD automatically — no separate
-command to remember. `setup` adds a small `codex` shell function to your shell rc
-(backup-first, reversible) that prints the HUD and then launches the real Codex.
-Manage it directly with `codex-hud shell install | uninstall | print`, or skip it
-with `codex-hud setup --no-shell`.
+After `setup`, the colorized HUD appears **above every prompt** inside Codex —
+no separate command to remember. This uses Codex's `UserPromptSubmit` hook, which
+codex-hud installs into `~/.codex/hooks.json` (merging with any existing hooks,
+backup-first, reversible). `setup` also adds a `codex` shell function so the HUD
+shows once at startup too.
+
+Manage these independently:
+
+- `codex-hud hooks install | uninstall | status` — the per-prompt HUD hook
+- `codex-hud shell install | uninstall | print` — the startup `codex` function
+
+Skip either during setup with `codex-hud setup --no-hooks` / `--no-shell`. If the
+in-Codex colors look wrong on your terminal, reinstall plain with
+`codex-hud hooks install --no-color`.
 
 ## What it shows
 
@@ -76,6 +85,7 @@ token/context figure is an **estimate** and labeled `est.`. Full details:
 | `codex-hud doctor`       | Diagnose installation and print a privacy disclosure   |
 | `codex-hud config <sub>` | `show` \| `reset` \| `path`                            |
 | `codex-hud shell <sub>`  | `install` \| `uninstall` \| `print` (the codex function) |
+| `codex-hud hooks <sub>`  | `install` \| `uninstall` \| `status` (per-prompt HUD hook) |
 | `codex-hud skill`        | Codex skill integration (planned)                      |
 | `codex-hud hooks`        | Codex lifecycle hooks (planned)                        |
 

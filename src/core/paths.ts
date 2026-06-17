@@ -13,6 +13,10 @@ export function codexSessionsDir(): string {
   return join(codexHome(), 'sessions');
 }
 
+export function codexHooksPath(): string {
+  return join(codexHome(), 'hooks.json');
+}
+
 export function projectCodexConfigPath(projectPath: string): string {
   return join(projectPath, '.codex', 'config.toml');
 }
