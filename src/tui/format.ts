@@ -26,6 +26,20 @@ export function formatResetIn(resetsAt: Date | undefined, now = new Date()): str
   return `resets in ${mins}m`;
 }
 
+/** Compact reset time for single-line use, e.g. "3h29m", "1d21h", "45m". */
+export function formatResetShort(resetsAt: Date | undefined, now = new Date()): string | undefined {
+  if (!resetsAt) return undefined;
+  const ms = resetsAt.getTime() - now.getTime();
+  if (ms <= 0) return 'now';
+  const totalMin = Math.floor(ms / 60_000);
+  const days = Math.floor(totalMin / 1440);
+  const hours = Math.floor((totalMin % 1440) / 60);
+  const mins = totalMin % 60;
+  if (days > 0) return `${days}d${hours}h`;
+  if (hours > 0) return `${hours}h${mins}m`;
+  return `${mins}m`;
+}
+
 export function truncate(value: string, max: number): string {
   if (value.length <= max) return value;
   if (max <= 1) return value.slice(0, max);

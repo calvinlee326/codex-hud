@@ -1,6 +1,6 @@
 import { buildSnapshot } from '../core/snapshot.js';
 import { findRecentUsage } from '../core/sessionReader.js';
-import { renderSnapshot } from '../tui/renderer.js';
+import { renderCompact } from '../tui/renderer.js';
 import { readAppConfig } from '../config/appConfig.js';
 
 export interface HookFlags {
@@ -41,7 +41,7 @@ export async function runHook(flags: HookFlags): Promise<number> {
       }
     }
 
-    const hud = renderSnapshot(snapshot, { config: appConfig, color: flags.color ?? true });
+    const hud = renderCompact(snapshot, { config: appConfig, color: flags.color ?? true });
     process.stdout.write(JSON.stringify({ systemMessage: hud }) + '\n');
   } catch {
     // Never break the user's prompt submission because of the HUD.

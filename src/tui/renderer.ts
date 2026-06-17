@@ -1,7 +1,7 @@
 import type { HudSnapshot, AppConfig } from '../types/app.js';
 import type { RateWindow } from '../types/session.js';
 import { estimateContextUsage } from '../core/contextWindow.js';
-import { formatDuration, formatResetIn, orUnknown, truncate } from './format.js';
+import { formatDuration, formatResetIn, formatResetShort, orUnknown, truncate } from './format.js';
 import { bar, severityColor } from './bars.js';
 import { createPalette, colorEnabled, type Palette } from './colors.js';
 
@@ -109,4 +109,45 @@ export function renderSnapshot(snapshot: HudSnapshot, options: RenderOptions = {
   if (options.footer) lines.push(p.paint(options.footer, 'dim'));
 
   return lines.join('\n');
+}
+
+function compactWindow(label: string, w: RateWindow, p: Palette): string {
+  const frac = w.usedPercent / 100;
+  const reset = formatResetShort(w.resetsAt);
+  const resetStr = reset ? p.paint(` ${reset}`, 'dim') : '';
+  return `${p.paint(label, 'dim')} ${bar(frac, p, severityColor(frac), 6)} ${Math.round(w.usedPercent)}%${resetStr}`;
+}
+
+/** Renders the HUD as a single compact line (used by the per-prompt hook). */
+export function renderCompact(snapshot: HudSnapshot, options: RenderOptions = {}): string {
+  const p = createPalette(colorEnabled(options.color));
+  const s = snapshot.session;
+  const model = s?.model ?? snapshot.config?.model;
+  const parts: string[] = [modelSegment(snapshot, p)];
+
+  const git = snapshot.project.git;
+  parts.push(
+    git.isRepo
+      ? `${p.paint(truncate(snapshot.project.name, 24), 'cyan')}${p.paint(`(${orUnknown(git.branch)}${git.dirty ? '*' : ''})`, 'magenta')}`
+      : p.paint(truncate(snapshot.project.name, 24), 'cyan'),
+  );
+
+  const ctx = estimateContextUsage(s?.latestTokenUsage, model, s?.modelContextWindow);
+  if (ctx !== undefined) {
+    parts.push(`${p.paint('ctx', 'dim')} ${bar(ctx, p, severityColor(ctx), 6)} ${pct(ctx)}`);
+  }
+  if (s?.rateLimits?.primary) parts.push(compactWindow('use', s.rateLimits.primary, p));
+  if (s?.rateLimits?.secondary) parts.push(compactWindow('wk', s.rateLimits.secondary, p));
+
+  const tools = s?.toolCounts ?? [];
+  if (tools.length > 0) {
+    parts.push(
+      tools
+        .slice(0, 3)
+        .map((t) => `${p.paint('✓', 'green')}${t.name}${p.paint('×' + t.count, 'dim')}`)
+        .join(' '),
+    );
+  }
+
+  return parts.join(p.paint(' · ', 'dim'));
 }

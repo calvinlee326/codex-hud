@@ -10,7 +10,7 @@ import {
 } from '../src/tui/format.js';
 import { bar, severityColor } from '../src/tui/bars.js';
 import { createPalette } from '../src/tui/colors.js';
-import { renderSnapshot } from '../src/tui/renderer.js';
+import { renderSnapshot, renderCompact } from '../src/tui/renderer.js';
 import type { HudSnapshot } from '../src/types/app.js';
 
 const plain = createPalette(false);
@@ -111,6 +111,17 @@ describe('renderSnapshot', () => {
   it('emits ANSI codes when color is enabled', () => {
     const out = renderSnapshot(baseSnapshot(), { color: true });
     expect(out).toContain('\x1b[');
+  });
+
+  it('renders a single compact line for the hook', () => {
+    const out = renderCompact(baseSnapshot(), { color: false });
+    expect(out.split('\n').length).toBe(1);
+    expect(out).toContain('[gpt-5.5 | high]');
+    expect(out).toContain('proj(main*)');
+    expect(out).toContain('ctx');
+    expect(out).toContain('use');
+    expect(out).toContain('wk');
+    expect(out).toContain('✓shell×3');
   });
 
   it('degrades gracefully with no session and no repo', () => {
