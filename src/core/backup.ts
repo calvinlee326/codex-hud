@@ -1,5 +1,5 @@
 import { readFile, writeFile, rename, stat } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { BackupError } from './errors.js';
 
 /**
@@ -16,7 +16,7 @@ export async function backupFile(filePath: string): Promise<string> {
   }
 
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupPath = join(dirname(filePath), `config.toml.codex-hud.bak-${stamp}`);
+  const backupPath = join(dirname(filePath), `${basename(filePath)}.codex-hud.bak-${stamp}`);
 
   try {
     await writeFile(backupPath, original, { flag: 'wx' });

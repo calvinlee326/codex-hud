@@ -7,6 +7,7 @@ import { runDoctor } from './commands/doctor.js';
 import { runConfig, type ConfigSub } from './commands/config.js';
 import { runSkillInstall } from './commands/skill.js';
 import { runHooksInstall } from './commands/hooks.js';
+import { runShell, type ShellSub } from './commands/shell.js';
 
 const cli = cac('codex-hud');
 
@@ -24,6 +25,7 @@ cli
   .option('--dry-run', 'Show planned changes without writing anything')
   .option('--yes', 'Skip confirmation prompts')
   .option('--no-statusline', 'Do not modify the native Codex statusline')
+  .option('--no-shell', 'Do not add the codex shell function')
   .option('--mode <mode>', 'Setup mode: basic | dashboard', { default: 'dashboard' })
   .action((opts) =>
     run(() =>
@@ -31,6 +33,7 @@ cli
         dryRun: opts.dryRun,
         yes: opts.yes,
         statusline: opts.statusline,
+        shell: opts.shell,
         mode: opts.mode,
       }),
     ),
@@ -81,6 +84,19 @@ cli
       return;
     }
     return run(() => runConfig(chosen));
+  });
+
+cli
+  .command('shell [sub]', 'Manage the codex shell function: install | uninstall | print')
+  .action((sub: string | undefined) => {
+    const valid: ShellSub[] = ['install', 'uninstall', 'print'];
+    const chosen = (sub ?? 'install') as ShellSub;
+    if (!valid.includes(chosen)) {
+      process.stderr.write(`Unknown shell subcommand: ${sub}. Use install | uninstall | print.\n`);
+      process.exitCode = 1;
+      return;
+    }
+    return run(() => runShell(chosen));
   });
 
 cli

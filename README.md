@@ -12,10 +12,17 @@ install it, run `setup` once, then keep using `codex` exactly as you do today.
 
 ```bash
 npm install -g codex-hud-dashboard
-codex-hud setup     # detect Codex, curate the native status line, write config
-codex               # open Codex normally — no wrapper, ever
-codex-hud watch     # optional: richer live dashboard in a second pane
+codex-hud setup        # detect Codex, curate native status line, add the codex shell function
+source ~/.zshrc        # reload your shell (or open a new terminal)
+codex                  # prints the colorized HUD, then opens Codex as usual
+codex-hud watch        # optional: live dashboard in a second pane
 ```
+
+After `setup`, typing **`codex`** shows the HUD automatically — no separate
+command to remember. `setup` adds a small `codex` shell function to your shell rc
+(backup-first, reversible) that prints the HUD and then launches the real Codex.
+Manage it directly with `codex-hud shell install | uninstall | print`, or skip it
+with `codex-hud setup --no-shell`.
 
 ## What it shows
 
@@ -68,6 +75,7 @@ token/context figure is an **estimate** and labeled `est.`. Full details:
 | `codex-hud watch`        | Live-refresh the HUD                                    |
 | `codex-hud doctor`       | Diagnose installation and print a privacy disclosure   |
 | `codex-hud config <sub>` | `show` \| `reset` \| `path`                            |
+| `codex-hud shell <sub>`  | `install` \| `uninstall` \| `print` (the codex function) |
 | `codex-hud skill`        | Codex skill integration (planned)                      |
 | `codex-hud hooks`        | Codex lifecycle hooks (planned)                        |
 

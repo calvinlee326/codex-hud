@@ -6,6 +6,7 @@ import { readGitInfo } from '../core/git.js';
 import { listSessions } from '../core/sessionReader.js';
 import { backupFile, atomicWrite, fileExists } from '../core/backup.js';
 import { planStatusLine, applyStatusLineEdit } from '../core/codexStatusline.js';
+import { detectShell, installShellIntegration } from '../core/shellInit.js';
 import { codexConfigPath, codexSessionsDir, tildify } from '../core/paths.js';
 import { readAppConfig, writeAppConfig } from '../config/appConfig.js';
 import { ConfigParseError } from '../core/errors.js';
@@ -15,11 +16,14 @@ export interface SetupFlags {
   dryRun?: boolean;
   yes?: boolean;
   statusline?: boolean; // --no-statusline => false
+  shell?: boolean; // --no-shell => false
   mode?: 'basic' | 'dashboard';
 }
 
 export async function runSetup(flags: SetupFlags): Promise<number> {
   const wantStatusline = flags.statusline !== false;
+  const wantShell = flags.shell !== false;
+  const shellTarget = detectShell();
   process.stdout.write('Codex HUD Setup\n\n');
 
   // 1. Detect environment
@@ -72,6 +76,13 @@ export async function runSetup(flags: SetupFlags): Promise<number> {
     process.stdout.write('  Your existing items are preserved; codex-hud only adds missing core items.\n');
   }
 
+  if (wantShell) {
+    process.stdout.write(
+      `\n  Shell integration (${shellTarget.shell}): add a 'codex' function to ${tildify(shellTarget.rcPath)}\n`,
+    );
+    process.stdout.write('  so typing `codex` shows the colorized HUD, then launches Codex as usual.\n');
+  }
+
   if (flags.dryRun) {
     process.stdout.write('\n  --dry-run: no files were changed.\n');
     return 0;
@@ -79,8 +90,8 @@ export async function runSetup(flags: SetupFlags): Promise<number> {
 
   // 3. Confirm
   const willEditConfig = wantStatusline && plan.changed;
-  if (willEditConfig && !flags.yes) {
-    const ok = await confirm('\n  Apply the statusline change and write codex-hud config?');
+  if ((willEditConfig || wantShell) && !flags.yes) {
+    const ok = await confirm('\n  Apply these changes (statusline, shell function, codex-hud config)?');
     if (!ok) {
       process.stdout.write('  Aborted. No changes made.\n');
       return 0;
@@ -116,9 +127,33 @@ export async function runSetup(flags: SetupFlags): Promise<number> {
   await writeAppConfig(appConfig);
   process.stdout.write('  codex-hud config saved.\n');
 
-  // 6. Next step
-  process.stdout.write('\n  Setup complete. Open Codex normally:\n\n      codex\n\n');
-  process.stdout.write('  For the richer live dashboard, run in another pane:\n\n      codex-hud watch\n\n');
+  // 6. Install shell integration
+  let shellInstalled = false;
+  if (wantShell) {
+    try {
+      const result = await installShellIntegration(shellTarget);
+      shellInstalled = true;
+      process.stdout.write(
+        result === 'installed'
+          ? `  Shell function added to ${tildify(shellTarget.rcPath)}.\n`
+          : `  Shell function already present in ${tildify(shellTarget.rcPath)}.\n`,
+      );
+    } catch (err) {
+      process.stderr.write(`  Could not update ${tildify(shellTarget.rcPath)}: ${(err as Error).message}\n`);
+    }
+  }
+
+  // 7. Next step
+  process.stdout.write('\n  Setup complete.\n');
+  if (shellInstalled) {
+    process.stdout.write(
+      `\n  Reload your shell, then just run codex:\n\n      source ${tildify(shellTarget.rcPath)}\n      codex\n\n`,
+    );
+    process.stdout.write('  The HUD prints each time you start Codex. For a live view:\n\n      codex-hud watch\n\n');
+  } else {
+    process.stdout.write('\n  Open Codex normally:\n\n      codex\n\n');
+    process.stdout.write('  For the live dashboard:\n\n      codex-hud watch\n\n');
+  }
   return 0;
 }
 
